@@ -89,9 +89,10 @@ void free(void* ptr){
         return;
     }
 
-    //Given a pointer that is a pointing to metadata free it
-    ListNode *pointer = (ListNode*)ptr;
+    //Given a pointer that is a pointing to metadata free it has to be subtracted by sizeof metadata to find the actual metadata pointer
+    ListNode *pointer = (ListNode*)ptr - sizeof(ListNode);
     pointer->free = 0;
+    printf("PTR: %p\n", pointer);
 
     //check adjacent regions if free combine into a free block
     //Left side
@@ -143,10 +144,15 @@ int main(int argc, char* argv[]){
     
     printf("Starting Location2: %p\n", mem);
 
-    int* test = umalloc(800000);
-    umalloc(198000);
-    umalloc(1950);
-    umalloc(15);
+    void* test = umalloc(800000);
+    void* test2 = umalloc(198000);
+    void* test3 = umalloc(1950);
+    void* test4 = umalloc(15);
+    printf("test3: %p\n", test3);
+    free(test3);
+    free(test);
+    free(test2);
+    free(test4);
     printMemory();
     
     return 0;
