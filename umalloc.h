@@ -16,6 +16,6 @@ typedef struct _listnode{
 
 void *umalloc(size_t bytes, char *file, int line);
 void ufree(void *ptr, char *file, int line);
-void printMemory();
+// void printMemory();
 
 #endif
