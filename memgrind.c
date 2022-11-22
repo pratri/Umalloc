@@ -34,7 +34,12 @@ int main(int argc, char *argv[]){
 
     //Basic Coalescense
 
-    
+    vtest = malloc(size/2);
+    void* vtest1 = malloc(size/4);
+    free(vtest);
+    free(vtest1);
+    void* vtest3 = malloc(size);
+    free(vtest3);
 
     //Saturation
 
