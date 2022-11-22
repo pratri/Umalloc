@@ -11,11 +11,11 @@ int main(int argc, char *argv[]){
     int* test1 = malloc(sizeof(int));
     *test1 = 4;
     free(test1);
-    printf("test1: %p\n", test1);
+    // printf("test1: %p\n", test1);
     int* test2 = malloc(sizeof(int));
     *test2 = 123;
     free(test2); 
-    printf("test2: %p\n", test2);
+    // printf("test2: %p\n", test2);
 
     clock_t end1 = clock();
     double avg_time1 = (double)(end1-begin1)/CLOCKS_PER_SEC;
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
     size = size/2;
     vtest = malloc(size);
     if(vtest!=NULL){
-        printf("%d\n", size);
+        // printf("%d\n", size);
     }
     free(vtest);
 
@@ -99,12 +99,10 @@ int main(int argc, char *argv[]){
 
     //Intermediate Coallescense
     clock_t begin6 = clock();
-
-    printMemory();
+    
     for(int i = 0; i<counter; i++){
         free(container[i]);
     }
-    printMemory();
 
     vtest = malloc(size);
     free(vtest);
