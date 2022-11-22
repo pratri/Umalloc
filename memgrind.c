@@ -17,20 +17,20 @@ int main(int argc, char *argv[]){
    printf("test2: %p\n", test2);
 
     //Maximazation
-    void* test;
+    void* vtest;
     int size = 1;
-    test = malloc(1);
-    while(test!=NULL){
-        free(test);
+    vtest = malloc(1);
+    while(vtest!=NULL){
+        free(vtest);
         size = size * 2;
-        test = malloc(size);
+        vtest = malloc(size);
     }
     size = size/2;
-    test = malloc(size);
-    if(test!=NULL){
+    vtest = malloc(size);
+    if(vtest!=NULL){
         printf("%d\n", size);
     }
-    free(test);
+    free(vtest);
 
     //Basic Coalescense
 
@@ -42,6 +42,8 @@ int main(int argc, char *argv[]){
     free(vtest3);
 
     //Saturation
+
+    
 
     //Time Overhead
 
