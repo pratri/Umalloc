@@ -17,6 +17,23 @@ typedef struct listnode{
     struct listnode *prev;
 } ListNode;
 
+
+void printMemory(){
+    ListNode *ptr;
+    ptr = (ListNode*)mem;
+    
+    while(ptr!=NULL){
+        if(ptr->free == 0){
+            //Is free
+            printf("Chunk at %p of size %lu is free\n", ptr, ptr->size);
+        }else{
+            //Is taken
+            printf("Chunk at %p of size %lu in use\n", ptr, ptr->size);
+        }
+        ptr = ptr->next;
+    }
+}
+
 void *umalloc(size_t bytes){
 
 
@@ -43,16 +60,16 @@ void *umalloc(size_t bytes){
     while(ptr!=NULL && ptr->size!=0){
         //Check if the chunk is large enough to have both metadata and bytes and is free
         if(ptr->size >= (bytes + sizeof(ListNode)) && ptr->free == 0){
-            printf("ALLOCATING\n");
             
             //Split the chunk into two chunks and set the first one to the size requested and not free and the rest would be a free chunk
             ListNode *new;
+            
 
             //Create new metadata after the requested number of bytes
             new = (ListNode*)((char*)ptr + bytes + sizeof(ListNode));
 
             //Size is that of the chunk minus the requested bytes
-            new->size = ptr->size - bytes;
+            new->size = ptr->size - bytes - sizeof(ListNode);
             
             new->free = 0;
             
@@ -64,13 +81,17 @@ void *umalloc(size_t bytes){
             new->prev = ptr;
             ptr->next = new;
             ptr->free = 1;
-            ptr->size = bytes;
+            // printf("SIZE: %zu, remaining, %zu\n", ptr->size, new->size);
+
+            ptr->size = bytes + sizeof(ListNode);
             
             //Return the chunk after the metadata 
+            // printf("ptr: %p\n", ptr);
             return (ptr + sizeof(ListNode));
         }
         ptr = ptr->next;
     }
+    printf("Not enough size\n");
     return NULL;
 }
 
@@ -78,6 +99,12 @@ void *umalloc(size_t bytes){
 
 void free(void* ptr){
 
+    if(ptr == NULL){
+        printf("NOTHING TO FREE\n");
+        return;
+    }
+
+    printf("mem: %p, %p\n", mem, mem+MEM_LENGTH);
     //Check if pointer is in mem array
     if((char*)ptr < mem || (char*)ptr > mem + MEM_LENGTH){
         printf("ERROR: NOT IN MEM ARRAY\n");
@@ -92,67 +119,62 @@ void free(void* ptr){
     //Given a pointer that is a pointing to metadata free it has to be subtracted by sizeof metadata to find the actual metadata pointer
     ListNode *pointer = (ListNode*)ptr - sizeof(ListNode);
     pointer->free = 0;
-    printf("PTR: %p\n", pointer);
 
     //check adjacent regions if free combine into a free block
     //Left side
+    
     if(pointer->prev!=NULL){
+       
         if(pointer->prev->free == 0){
             //Previous chunk is free, so combine their sizes
             pointer->prev->size = pointer->prev->size + pointer->size;
+            
             //Change the prev and next nodes
             pointer->prev->next = pointer->next;
             pointer->next->prev = pointer->prev;
+            
             //set pointer to the combined node
             pointer = pointer->prev;
+            printMemory();
         }
     }
     //Right Side
     if(pointer->next!=NULL){
+        
         if(pointer->next->free == 0){
+            
             //Combine the sizes
             pointer->size = pointer->size + pointer->next->size;
             //Change the prev and next nodes
             pointer->next = pointer->next->next;
-            pointer->next->prev = pointer;
+            printf("HERE?\n");
+            
+            //Checks to see if the next node is NULL, if it's not then change it's prev
+            if(pointer->next!=NULL){
+                pointer->next->prev = pointer;
+            }
+            
         }
     }
-
+    
 
     return;
 }
 
-void printMemory(){
-    ListNode *ptr;
-    ptr = (ListNode*)mem;
 
-    while(ptr!=NULL){
-        if(ptr->free == 0){
-            //Is free
-            printf("Chunk at %p of size %lu is free\n", ptr, ptr->size);
-        }else{
-            //Is taken
-            printf("Chunk at %p of size %lu in use\n", ptr, ptr->size);
-        }
-        ptr = ptr->next;
-    }
-}
-
-
-int main(int argc, char* argv[]){
-    printf("Size of listnode: %lu\n", sizeof(ListNode));
-    
+int main(int argc, char* argv[]){    
     printf("Starting Location2: %p\n", mem);
 
     void* test = umalloc(800000);
     void* test2 = umalloc(198000);
     void* test3 = umalloc(1950);
     void* test4 = umalloc(15);
-    printf("test3: %p\n", test3);
     free(test3);
     free(test);
+
     free(test2);
     free(test4);
+
     printMemory();
     
     return 0;
