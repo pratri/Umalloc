@@ -14,6 +14,7 @@ typedef struct listnode{
     //if 0 free if 1 taken
     int free;
     struct listnode *next;
+    struct listnode *prev;
 } ListNode;
 
 void *umalloc(size_t bytes){
@@ -30,6 +31,7 @@ void *umalloc(size_t bytes){
         ptr->size = MEM_LENGTH;
         ptr->free = 0;
         ptr->next = NULL;
+        ptr->prev = NULL;
         init = 'b';
     }
     //No bytes requested
@@ -39,7 +41,7 @@ void *umalloc(size_t bytes){
 
     //Iterate through all the metadata to see where there is a free one of the right size
     while(ptr!=NULL && ptr->size!=0){
-        //Check if the chunk is large enough and is free
+        //Check if the chunk is large enough to have both metadata and bytes and is free
         if(ptr->size >= (bytes + sizeof(ListNode)) && ptr->free == 0){
             printf("ALLOCATING\n");
             
@@ -47,15 +49,19 @@ void *umalloc(size_t bytes){
             ListNode *new;
 
             //Create new metadata after the requested number of bytes
-            new = (ListNode*)((char*)ptr+bytes+sizeof(ListNode));
+            new = (ListNode*)((char*)ptr + bytes + sizeof(ListNode));
 
-            //Size is that of the chunk minus the requested bytes minus metadata size of new
-            new->size = ptr->size - bytes - sizeof(ListNode);
+            //Size is that of the chunk minus the requested bytes
+            new->size = ptr->size - bytes;
             
             new->free = 0;
             
             //Sets ptr pointing to new metadata, which points to the metadata after that
+            if(ptr->next!=NULL){
+                ptr->next->prev = new;
+            }
             new->next = ptr->next;
+            new->prev = ptr;
             ptr->next = new;
             ptr->free = 1;
             ptr->size = bytes;
@@ -72,9 +78,47 @@ void *umalloc(size_t bytes){
 
 void free(void* ptr){
 
-    //Given a pointer that is a pointing to metadata
-    p
+    //Check if pointer is in mem array
+    if((char*)ptr < mem || (char*)ptr > mem + MEM_LENGTH){
+        printf("ERROR: NOT IN MEM ARRAY\n");
+        return;
+    }
+    //Check if mem is uninitialized
+    if(init == 'a'){
+        printf("ERROR no malloc was called");
+        return;
+    }
 
+    //Given a pointer that is a pointing to metadata free it
+    ListNode *pointer = (ListNode*)ptr;
+    pointer->free = 0;
+
+    //check adjacent regions if free combine into a free block
+    //Left side
+    if(pointer->prev!=NULL){
+        if(pointer->prev->free == 0){
+            //Previous chunk is free, so combine their sizes
+            pointer->prev->size = pointer->prev->size + pointer->size;
+            //Change the prev and next nodes
+            pointer->prev->next = pointer->next;
+            pointer->next->prev = pointer->prev;
+            //set pointer to the combined node
+            pointer = pointer->prev;
+        }
+    }
+    //Right Side
+    if(pointer->next!=NULL){
+        if(pointer->next->free == 0){
+            //Combine the sizes
+            pointer->size = pointer->size + pointer->next->size;
+            //Change the prev and next nodes
+            pointer->next = pointer->next->next;
+            pointer->next->prev = pointer;
+        }
+    }
+
+
+    return;
 }
 
 void printMemory(){
@@ -82,20 +126,15 @@ void printMemory(){
     ptr = (ListNode*)mem;
 
     while(ptr!=NULL){
-        printf("Faulr1?\n");
         if(ptr->free == 0){
             //Is free
-            printf("Faulr2?\n");
             printf("Chunk at %p of size %lu is free\n", ptr, ptr->size);
         }else{
             //Is taken
-            printf("Faulr3?\n");
             printf("Chunk at %p of size %lu in use\n", ptr, ptr->size);
         }
-        printf("Faulr4?\n");
         ptr = ptr->next;
     }
-    printf("Faulr5?\n");
 }
 
 
@@ -104,9 +143,10 @@ int main(int argc, char* argv[]){
     
     printf("Starting Location2: %p\n", mem);
 
-    int* test = umalloc(sizeof(int));
-    *test = 4;
-    printf("Testing %d\n", *test);
+    int* test = umalloc(800000);
+    umalloc(198000);
+    umalloc(1950);
+    umalloc(15);
     printMemory();
     
     return 0;
