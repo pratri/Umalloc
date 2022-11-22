@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "umalloc.h"
 
 //Memory length of 10 MB
 #define MEM_LENGTH 1000000
@@ -8,33 +9,25 @@
 static char mem[MEM_LENGTH];
 char init = 'a';
 
-typedef struct listnode{
-    //Size in bytes
-    size_t size;
-    //if 0 free if 1 taken
-    int free;
-    struct listnode *next;
-    struct listnode *prev;
-} ListNode;
 
-
-void printMemory(){
-    ListNode *ptr;
-    ptr = (ListNode*)mem;
+// void printMemory(){
+//     ListNode *ptr;
+//     ptr = (ListNode*)mem;
     
-    while(ptr!=NULL){
-        if(ptr->free == 0){
-            //Is free
-            printf("Chunk at %p of size %lu is free\n", ptr, ptr->size);
-        }else{
-            //Is taken
-            printf("Chunk at %p of size %lu in use\n", ptr, ptr->size);
-        }
-        ptr = ptr->next;
-    }
-}
+//     while(ptr!=NULL){
+//         if(ptr->free == 0){
+//             //Is free
+//             printf("Chunk at %p of size %lu is free\n", ptr, ptr->size);
+//         }else{
+//             //Is taken
+//             printf("Chunk at %p of size %lu in use\n", ptr, ptr->size);
+//         }
+//         ptr = ptr->next;
+//     }
+//     printf("\n");
+// }
 
-void *umalloc(size_t bytes){
+void *umalloc(size_t bytes, char *file, int line){
 
 
     ListNode *ptr;
@@ -53,6 +46,7 @@ void *umalloc(size_t bytes){
     }
     //No bytes requested
     if(bytes == 0){
+        printf("Error calling malloc with 0 bytes in file %s, on line %d\n", file, line);
         return NULL;
     }
 
@@ -91,34 +85,44 @@ void *umalloc(size_t bytes){
         }
         ptr = ptr->next;
     }
-    printf("Not enough size\n");
+    printf("Not enough space avialable in memory for this malloc call in file %s on line %d\n", file, line);
     return NULL;
 }
 
 
 
-void free(void* ptr){
+void ufree(void* ptr, char *file, int line){
 
     if(ptr == NULL){
-        printf("NOTHING TO FREE\n");
+        printf("Error pointer is NULL in free call in file %s, line %d\n", file, line);
         return;
     }
 
-    printf("mem: %p, %p\n", mem, mem+MEM_LENGTH);
-    //Check if pointer is in mem array
-    if((char*)ptr < mem || (char*)ptr > mem + MEM_LENGTH){
-        printf("ERROR: NOT IN MEM ARRAY\n");
-        return;
-    }
     //Check if mem is uninitialized
     if(init == 'a'){
-        printf("ERROR no malloc was called");
+        printf("ERROR memory is unitialized in free call in file %s, line %d", file, line);
         return;
     }
 
     //Given a pointer that is a pointing to metadata free it has to be subtracted by sizeof metadata to find the actual metadata pointer
     ListNode *pointer = (ListNode*)ptr - sizeof(ListNode);
     pointer->free = 0;
+
+    ListNode *main_ptr = (ListNode*)mem;
+    //Check if given pointer was called by malloc and is at the start of a chunk
+    int checker = 0;
+    while(main_ptr!=NULL){
+        if(pointer == main_ptr){
+            //Is in chunk
+            checker = 1;
+            break;
+        }
+        main_ptr = main_ptr->next;
+    }
+
+    if(checker == 0){
+        printf("ERROR: given pointer is not at the start of a chunk. File %s. Line: %d\n", file, line);
+    }
 
     //check adjacent regions if free combine into a free block
     //Left side
@@ -135,7 +139,7 @@ void free(void* ptr){
             
             //set pointer to the combined node
             pointer = pointer->prev;
-            printMemory();
+            // printMemory();
         }
     }
     //Right Side
@@ -147,8 +151,7 @@ void free(void* ptr){
             pointer->size = pointer->size + pointer->next->size;
             //Change the prev and next nodes
             pointer->next = pointer->next->next;
-            printf("HERE?\n");
-            
+
             //Checks to see if the next node is NULL, if it's not then change it's prev
             if(pointer->next!=NULL){
                 pointer->next->prev = pointer;
@@ -162,20 +165,3 @@ void free(void* ptr){
 }
 
 
-int main(int argc, char* argv[]){    
-    printf("Starting Location2: %p\n", mem);
-
-    void* test = umalloc(800000);
-    void* test2 = umalloc(198000);
-    void* test3 = umalloc(1950);
-    void* test4 = umalloc(15);
-    free(test3);
-    free(test);
-
-    free(test2);
-    free(test4);
-
-    printMemory();
-    
-    return 0;
-}
