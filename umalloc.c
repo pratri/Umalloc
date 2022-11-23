@@ -8,6 +8,7 @@
 
 static char mem[MEM_LENGTH];
 char init = 'a';
+int memory_in_use = 0;
 
 
 // void printMemory(){
@@ -81,10 +82,16 @@ void *umalloc(size_t bytes, char *file, int line){
             
             //Return the chunk after the metadata 
             // printf("ptr: %p\n", ptr);
+            memory_in_use += ptr->size;
+
             return (ptr + sizeof(ListNode));
         }
         ptr = ptr->next;
     }
+    if(memory_in_use < MEM_LENGTH - bytes - sizeof(ListNode)){
+        printf("There is enough space available in memory, but no chunk large enough for the malloc call in file %s on line %d", file, line);
+    }
+
     printf("Not enough space avialable in memory for this malloc call in file %s on line %d\n", file, line);
     return NULL;
 }
@@ -107,6 +114,7 @@ void ufree(void* ptr, char *file, int line){
     //Given a pointer that is a pointing to metadata free it has to be subtracted by sizeof metadata to find the actual metadata pointer
     ListNode *pointer = (ListNode*)ptr - sizeof(ListNode);
     pointer->free = 0;
+    memory_in_use -= pointer->size;
 
     ListNode *main_ptr = (ListNode*)mem;
     //Check if given pointer was called by malloc and is at the start of a chunk
