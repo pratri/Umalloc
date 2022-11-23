@@ -86,7 +86,7 @@ int main(int argc, char *argv[]){
     printf("%f\n", avg_time4);
     //Time Overhead
 
-    free(vtest1);
+    free(container[counter-1]);
     
     clock_t begin5 = clock();
 
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
 
     //Intermediate Coallescense
     clock_t begin6 = clock();
-    
+
     for(int i = 0; i<counter; i++){
         free(container[i]);
     }
